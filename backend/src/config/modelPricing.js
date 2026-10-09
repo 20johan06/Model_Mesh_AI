@@ -77,5 +77,27 @@ export const VERIFIED_MODEL_METRICS = {
     sourceType: 'manually_maintained_official_spec',
     lastVerifiedDate: '2026-10-09',
     provenanceUrl: 'https://huggingface.co/docs/api-inference/'
+  },
+  'gemini-3.8-flash': {
+    name: 'Gemini 3.8 Flash',
+    provider: 'Google Gemini',
+    inputCostPer1M: 0.075,
+    outputCostPer1M: 0.30,
+    officialQualityBenchmark: 90.0,
+    supportedDomains: ['Code', 'Math', 'Reasoning', 'Creative', 'General'],
+    sourceType: 'manually_maintained_official_spec',
+    lastVerifiedDate: '2026-10-10',
+    provenanceUrl: 'https://ai.google.dev/gemini-api/docs/models/gemini'
+  },
+  'gemini-2.0-flash': {
+    name: 'Gemini 2.0 Flash',
+    provider: 'Google Gemini',
+    inputCostPer1M: 0.10,
+    outputCostPer1M: 0.40,
+    officialQualityBenchmark: 88.0,
+    supportedDomains: ['Code', 'Math', 'Reasoning', 'General'],
+    sourceType: 'manually_maintained_official_spec',
+    lastVerifiedDate: '2026-10-10',
+    provenanceUrl: 'https://ai.google.dev/gemini-api/docs/models/gemini'
   }
 };

@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import contextRoutes from './routes/context.routes.js';
 import routerRoutes from './routes/router.routes.js';
+import executionRoutes from './routes/execution.routes.js';
 
 dotenv.config();
 
@@ -61,6 +62,9 @@ app.use('/api/context', contextRoutes);
 
 // Mount Intelligence Router Routes
 app.use('/api/router', routerRoutes);
+
+// Mount Multi-LLM Execution Routes
+app.use('/api/execute', executionRoutes);
 
 // Handle unknown API routes
 app.use('/api/*', (req, res) => {
