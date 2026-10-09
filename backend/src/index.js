@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import contextRoutes from './routes/context.routes.js';
+import routerRoutes from './routes/router.routes.js';
 
 dotenv.config();
 
@@ -57,6 +58,9 @@ app.get('/api/health', (req, res) => {
 
 // Mount Adaptive Context Layer Routes
 app.use('/api/context', contextRoutes);
+
+// Mount Intelligence Router Routes
+app.use('/api/router', routerRoutes);
 
 // Handle unknown API routes
 app.use('/api/*', (req, res) => {

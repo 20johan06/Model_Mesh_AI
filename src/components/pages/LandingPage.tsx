@@ -76,12 +76,12 @@ export const LandingPage: React.FC = () => {
                 className="w-full sm:w-auto btn-primary text-xs py-2.5 px-4 font-semibold whitespace-nowrap"
               >
                 {isTestRunning ? (
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 justify-center">
                     <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                     Evaluating...
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1.5 justify-center">
                     <Play className="w-3.5 h-3.5 fill-current" />
                     Simulate Route
                   </span>
@@ -90,14 +90,14 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {quickResultModel && (
-              <div className="mt-3 p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between animate-fadeIn">
+              <div className="mt-3 p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 animate-fadeIn">
                 <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <strong>Route Result:</strong> {quickResultModel}
                 </span>
                 <button
                   onClick={() => setActiveTab('playground')}
-                  className="text-xs font-semibold text-emerald-400 hover:underline flex items-center gap-1"
+                  className="text-xs font-semibold text-emerald-400 hover:underline flex items-center gap-1 shrink-0"
                 >
                   View in Playground <ArrowRight className="w-3 h-3" />
                 </button>
@@ -105,10 +105,10 @@ export const LandingPage: React.FC = () => {
             )}
           </div>
 
-          <div className="pt-4 flex flex-wrap items-center gap-4">
+          <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             <button
               onClick={() => setActiveTab('playground')}
-              className="btn-primary py-2.5 px-5 font-semibold text-sm"
+              className="btn-primary py-2.5 px-5 font-semibold text-sm justify-center"
             >
               <span>Explore AI Playground</span>
               <ArrowRight className="w-4 h-4" />
@@ -116,7 +116,7 @@ export const LandingPage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('architecture')}
-              className="btn-secondary py-2.5 px-5 font-semibold text-sm"
+              className="btn-secondary py-2.5 px-5 font-semibold text-sm justify-center"
             >
               <Layers className="w-4 h-4 text-indigo-400" />
               <span>View System Topology</span>

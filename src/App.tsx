@@ -2,7 +2,6 @@ import React from 'react';
 import { ModelMeshProvider, useModelMesh } from './context/ModelMeshContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
-import { MobileNav } from './components/layout/MobileNav';
 
 import { LandingPage } from './components/pages/LandingPage';
 import { PlaygroundPage } from './components/pages/PlaygroundPage';
@@ -31,7 +30,6 @@ export const App: React.FC = () => {
     <ModelMeshProvider>
       <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] flex flex-col selection:bg-indigo-500 selection:text-white">
         <Navbar />
-        <MobileNav />
 
         <div className="flex-1 flex max-w-7xl w-full mx-auto">
           <Sidebar />

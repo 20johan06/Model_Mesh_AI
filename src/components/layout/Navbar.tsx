@@ -16,6 +16,8 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
+import { MobileNav } from './MobileNav';
+
 export const Navbar: React.FC = () => {
   const {
     theme,
@@ -148,6 +150,7 @@ export const Navbar: React.FC = () => {
           </button>
         </div>
       </div>
+      <MobileNav />
     </header>
   );
 };

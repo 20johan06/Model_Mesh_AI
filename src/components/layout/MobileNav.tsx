@@ -23,7 +23,7 @@ export const MobileNav: React.FC = () => {
   ];
 
   return (
-    <nav className="md:hidden sticky top-16 z-30 w-full bg-slate-950/90 border-b border-white/10 px-2 py-1.5 overflow-x-auto">
+    <nav className="md:hidden w-full bg-slate-950/90 border-t border-b border-white/10 px-2 py-1.5 overflow-x-auto max-w-full">
       <div className="flex items-center gap-1 min-w-max">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
