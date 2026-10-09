@@ -1256,7 +1256,10 @@ If you have follow-up requests—such as code examples, detailed explanations, o
 export async function executeLLMWithFallback({ rankedCandidates = [], prompt, taskType = 'general', parameters = {}, history = [], maxAttempts = 3 }) {
   dotenv.config();
 
-  const isImageTask = taskType === 'image_generation' || taskType === 'creative_image' || parameters.mode === 'image';
+  const isImageTask = taskType === 'image_generation' ||
+                      taskType === 'creative_image' ||
+                      parameters.mode === 'image' ||
+                      (/\b(generate|create|draw|paint|render)\b.*\b(image|photo|picture|logo|sketch|illustration)\b/i.test(prompt || '') || /^\s*draw\b/i.test(prompt || ''));
   if (isImageTask && process.env.STABILITY_API_KEY) {
     const currentAttempt = {
       modelId: 'stable-image-core',

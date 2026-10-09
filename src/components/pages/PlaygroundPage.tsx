@@ -256,14 +256,13 @@ export const PlaygroundPage: React.FC = () => {
     if (!textToSend || isExecuting) return;
 
     const isImageReq = isImageMode ||
-      textToSend.toLowerCase().startsWith('/image ') ||
-      textToSend.toLowerCase().startsWith('generate image') ||
+      /\b(generate|create|draw|paint|render)\b.*\b(image|photo|picture|logo|sketch|illustration)\b/i.test(textToSend) ||
+      /^\s*draw\b/i.test(textToSend) ||
+      textToSend.toLowerCase().startsWith('/image') ||
       customPrompt?.includes('floating city');
 
     const promptText = textToSend.toLowerCase().startsWith('/image ')
       ? textToSend.slice(7).trim()
-      : textToSend.toLowerCase().startsWith('generate image:')
-      ? textToSend.slice(15).trim()
       : textToSend;
 
     const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

@@ -50,6 +50,20 @@ test('1d. Classification - Summarization query', () => {
   assert.equal(res.taskType, 'summarization');
 });
 
+test('1f. Classification - Image Generation query', () => {
+  const res1 = analyzeQuery('Generate an image of a cat');
+  assert.equal(res1.taskType, 'image_generation');
+
+  const res2 = analyzeQuery('Create a realistic image of a college campus');
+  assert.equal(res2.taskType, 'image_generation');
+
+  const res3 = analyzeQuery('Draw a futuristic city');
+  assert.equal(res3.taskType, 'image_generation');
+
+  const res4 = analyzeQuery('Generate a logo for my project');
+  assert.equal(res4.taskType, 'image_generation');
+});
+
 test('1e. Classification - General query', () => {
   const res = analyzeQuery('What is the capital of France?');
   assert.equal(res.taskType, 'factual');

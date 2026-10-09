@@ -55,8 +55,16 @@ export function analyzeQuery(query) {
     'capital of', 'list of', 'which country', 'what year'
   ];
 
+  const imagePatterns = [
+    'generate an image', 'generate image', 'create an image', 'create image',
+    'draw a ', 'draw an ', 'draw ', 'generate a logo', 'create a logo',
+    'generate a photo', 'create a photo', 'paint a ', 'picture of',
+    'render an image', 'image of a', 'image of an', 'sketch a', 'illustration of'
+  ];
+
   // Code block detection (e.g. ```typescript ... ```)
   const containsCodeBlock = /```[\s\S]*?```/.test(text) || /`[^`]+`/.test(text);
+  const isImageIntentRegex = /\b(generate|create|draw|paint|render)\b.*\b(image|photo|picture|logo|sketch|illustration)\b/i.test(lower) || /^\s*draw\b/i.test(lower);
 
   // Score each task type
   const codeScore = codePatterns.filter(p => lower.includes(p)).length + (containsCodeBlock ? 3 : 0);
@@ -66,10 +74,12 @@ export function analyzeQuery(query) {
   const summaryScore = summarizationPatterns.filter(p => lower.includes(p)).length;
   const translationScore = translationPatterns.filter(p => lower.includes(p)).length;
   const factualScore = factualPatterns.filter(p => lower.includes(p)).length;
+  const imageScore = imagePatterns.filter(p => lower.includes(p)).length + (isImageIntentRegex ? 5 : 0);
 
   // Determine Task Type
   let taskType = 'general';
   const scores = [
+    { type: 'image_generation', score: imageScore },
     { type: 'coding', score: codeScore },
     { type: 'mathematics', score: mathScore },
     { type: 'reasoning', score: reasoningScore },
@@ -152,6 +162,8 @@ function generateIntentSummary(taskType, text, brevity, language) {
   const shortSnippet = text.length > 50 ? text.slice(0, 50).trim() + '...' : text.trim();
 
   switch (taskType) {
+    case 'image_generation':
+      return `Image generation prompt: "${shortSnippet}"`;
     case 'coding':
       return `Code request${language ? ` in ${language}` : ''}: "${shortSnippet}"`;
     case 'mathematics':
