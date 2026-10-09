@@ -235,7 +235,7 @@ export const ModelRegistryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Input Cost ($/1M)</label>
                   <input
@@ -270,7 +270,7 @@ export const ModelRegistryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Quality Score (1-100)</label>
                   <input

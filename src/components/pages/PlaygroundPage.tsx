@@ -126,9 +126,9 @@ export const PlaygroundPage: React.FC = () => {
         </div>
 
         {/* Strategy Control Pill */}
-        <div className="flex items-center gap-3 bg-slate-900 border border-white/10 p-2 rounded-xl">
-          <div className="text-xs font-medium text-slate-400 pl-2">Routing Strategy:</div>
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 bg-slate-900 border border-white/10 p-2 rounded-xl max-w-full">
+          <div className="text-xs font-medium text-slate-400 pl-2 shrink-0">Routing Strategy:</div>
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
             {(['balanced', 'cost', 'latency', 'quality', 'custom'] as RoutingStrategy[]).map((st) => (
               <button
                 key={st}

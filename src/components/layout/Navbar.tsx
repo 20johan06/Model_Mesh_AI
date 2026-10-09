@@ -140,10 +140,11 @@ export const Navbar: React.FC = () => {
           {/* CTA Playground */}
           <button
             onClick={() => setActiveTab('playground')}
-            className="btn-primary text-xs font-semibold py-1.5 px-3"
+            className="btn-primary text-xs font-semibold py-1.5 px-2.5 sm:px-3 shrink-0"
           >
             <Zap className="w-3.5 h-3.5" />
-            Launch Playground
+            <span className="hidden sm:inline">Launch Playground</span>
+            <span className="sm:hidden">Playground</span>
           </button>
         </div>
       </div>

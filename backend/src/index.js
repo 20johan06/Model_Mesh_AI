@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import contextRoutes from './routes/context.routes.js';
 
 dotenv.config();
 
@@ -23,8 +24,28 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// JSON request body parser
-app.use(express.json());
+// JSON request body parser with error handling
+app.use(express.json({
+  verify: (req, res, buf, encoding) => {
+    try {
+      if (buf.length) JSON.parse(buf.toString(encoding || 'utf8'));
+    } catch {
+      // Flag syntax error for custom JSON error handler
+      req.invalidJson = true;
+    }
+  }
+}));
+
+// Handle Invalid JSON Syntax errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err || req.invalidJson) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Invalid JSON format in request body.'
+    });
+  }
+  next(err);
+});
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -33,6 +54,9 @@ app.get('/api/health', (req, res) => {
     service: 'modelmesh-ai-backend'
   });
 });
+
+// Mount Adaptive Context Layer Routes
+app.use('/api/context', contextRoutes);
 
 // Handle unknown API routes
 app.use('/api/*', (req, res) => {
