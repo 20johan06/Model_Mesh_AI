@@ -23,6 +23,7 @@ export interface ExecuteTaskRequest {
   query: string;
   context?: Record<string, unknown>;
   strategy?: 'balanced' | 'cost' | 'latency' | 'quality' | 'custom';
+  history?: Array<{ sender: 'user' | 'assistant'; content: string }>;
   options?: {
     parameters?: {
       max_new_tokens?: number;
@@ -132,6 +133,38 @@ export async function executeTaskApi(payload: ExecuteTaskRequest): Promise<Execu
     return {
       status: 'provider_execution_error',
       message: error.message || 'Failed to connect to backend execution service.'
+    };
+  }
+}
+
+/**
+ * Generates an image via backend Stability AI endpoint
+ */
+export async function generateImageApi(prompt: string, options: Record<string, unknown> = {}): Promise<ExecuteTaskResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/generate-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ prompt, options }),
+    });
+
+    const data = await response.json();
+    if (!response.ok && !data.status) {
+      return {
+        status: 'provider_execution_error',
+        message: data.message || `Stability API returned HTTP ${response.status}: ${response.statusText}`
+      };
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('[API] Image generation request failed:', error);
+    return {
+      status: 'provider_execution_error',
+      message: error.message || 'Failed to connect to image generation service.'
     };
   }
 }

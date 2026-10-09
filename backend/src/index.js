@@ -63,8 +63,9 @@ app.use('/api/context', contextRoutes);
 // Mount Intelligence Router Routes
 app.use('/api/router', routerRoutes);
 
-// Mount Multi-LLM Execution Routes
+// Mount Multi-LLM Execution Routes & Image Generation
 app.use('/api/execute', executionRoutes);
+app.use('/api/generate-image', executionRoutes);
 
 // Handle unknown API routes
 app.use('/api/*', (req, res) => {

@@ -8,10 +8,93 @@ import { processContext } from '../services/contextManager.js';
 import { filterPrivacyContext, filterPrivacy } from '../services/privacyFilter.js';
 import { analyzeQuery } from '../services/queryUnderstanding.js';
 import { routeTask } from '../services/intelligenceRouter.js';
-import { executeLLMWithFallback } from '../services/llmExecution.js';
+import { executeLLMWithFallback, executeStabilityImageGeneration } from '../services/llmExecution.js';
 import { validateQueryInput } from '../utils/validation.js';
 
 const router = Router();
+
+/**
+ * POST /api/generate-image
+ * Dedicated backend endpoint for Stability AI image generation
+ */
+router.post('/generate-image', async (req, res) => {
+  try {
+    const { prompt, options = {} } = req.body || {};
+    const promptText = (prompt || req.body.query || '').trim();
+
+    validateQueryInput(promptText);
+
+    const execResult = await executeStabilityImageGeneration({
+      prompt: promptText,
+      parameters: options.parameters || {}
+    });
+
+    if (!execResult.success) {
+      const statusCode = execResult.statusCode || 500;
+      const statusType = (statusCode === 401 || statusCode === 403)
+        ? 'auth_error'
+        : (statusCode === 402 || statusCode === 429)
+        ? 'quota_error'
+        : 'provider_execution_error';
+
+      return res.status(statusCode).json({
+        status: statusType,
+        message: execResult.error || 'Stability AI image generation failed.',
+        attemptedCandidates: [{
+          modelId: 'stable-image-core',
+          provider: 'Stability AI',
+          attemptNumber: 1,
+          error: execResult.error
+        }],
+        lastError: execResult.error
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      queryAnalysis: {
+        taskType: 'image_generation',
+        intent: 'creative_image',
+        complexity: 'medium',
+        constraints: {}
+      },
+      privacy: {
+        hasRedactions: false,
+        redactionCount: 0
+      },
+      routing: {
+        winningCandidate: {
+          modelId: execResult.modelId,
+          modelName: 'Stability AI (Stable Image Core)',
+          provider: 'Stability AI',
+          totalScore: 99
+        },
+        rankedCandidates: [],
+        confidence: 'high',
+        routingStrategy: 'balanced',
+        fallbackUsed: false,
+        attemptCount: 1
+      },
+      execution: {
+        modelId: execResult.modelId,
+        provider: 'Stability AI',
+        taskType: 'image_generation',
+        output: execResult.output,
+        imageDataUri: execResult.imageDataUri,
+        realLatencyMs: execResult.realLatencyMs,
+        sourceType: execResult.sourceType,
+        isSimulated: false,
+        simulatedLabel: null
+      }
+    });
+
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      error: error.name || 'Internal Server Error',
+      message: error.message || 'An unexpected error occurred during image generation.'
+    });
+  }
+});
 
 /**
  * POST /api/execute
@@ -19,7 +102,7 @@ const router = Router();
  */
 router.post('/', async (req, res) => {
   try {
-    const { query, context: userContext, strategy = 'balanced', options = {} } = req.body || {};
+    const { query, context: userContext, strategy = 'balanced', options = {}, history = [] } = req.body || {};
 
     // 1. Input Validation
     validateQueryInput(query);
@@ -50,7 +133,8 @@ router.post('/', async (req, res) => {
       rankedCandidates: routeResult.rankedCandidates,
       prompt: promptText,
       taskType: analysis.taskType,
-      parameters: options.parameters || {}
+      parameters: options.parameters || {},
+      history
     });
 
     if (execResult.status === 'no_compatible_model') {

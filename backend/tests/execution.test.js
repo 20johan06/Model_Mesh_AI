@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { executeSingleLLMCall, executeGeminiLLMCall, executeLLMWithFallback, isHuggingFaceCompatibleModel } from '../src/services/llmExecution.js';
+import { executeSingleLLMCall, executeGeminiLLMCall, executeStabilityImageGeneration, executeLLMWithFallback, isHuggingFaceCompatibleModel } from '../src/services/llmExecution.js';
 
 let passed = 0;
 let total = 0;
@@ -411,6 +411,70 @@ async function runExecutionTests() {
     assert.equal(res.winningCandidate.provider, 'Google Gemini');
     assert.ok(calledUrl.includes('generativelanguage.googleapis.com'));
     assert.ok(!calledUrl.includes('huggingface'));
+  });
+
+  // Test 17: LLM_PROVIDER=openrouter Selection
+  await test('17. LLM_PROVIDER=openrouter selects OpenRouter and sends correct headers', async () => {
+    process.env.LLM_PROVIDER = 'openrouter';
+    process.env.OPENROUTER_API_KEY = 'sk-or-test-key-123';
+    process.env.OPENROUTER_MODEL = 'poolside/laguna-s-2.1:free';
+
+    let calledUrl = '';
+    let calledHeaders = {};
+    globalThis.fetch = async (url, opts) => {
+      calledUrl = url;
+      calledHeaders = opts.headers;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          choices: [{ message: { content: 'def test_func(): return True' } }]
+        })
+      };
+    };
+
+    const res = await executeLLMWithFallback({
+      rankedCandidates: [{ modelId: 'meta-llama/Llama-3.3-70B-Instruct', provider: 'Meta' }],
+      prompt: 'Write Python function'
+    });
+
+    assert.equal(res.status, 'success');
+    assert.equal(res.winningCandidate.provider, 'OpenRouter');
+    assert.ok(calledUrl.includes('openrouter.ai/api/v1/chat/completions'));
+    assert.equal(calledHeaders.Authorization, 'Bearer sk-or-test-key-123');
+    assert.equal(calledHeaders['HTTP-Referer'], 'http://localhost:3001');
+  });
+
+  // Test 18: Stability AI Image Generation Execution
+  await test('18. Stability AI Image Generation sends correct headers and returns imageDataUri', async () => {
+    process.env.STABILITY_API_KEY = 'sk-test-stability-key-123';
+
+    let calledUrl = '';
+    let calledHeaders = {};
+    globalThis.fetch = async (url, opts) => {
+      calledUrl = url;
+      calledHeaders = opts.headers;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          image: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          finish_reason: 'SUCCESS',
+          seed: 12345
+        })
+      };
+    };
+
+    const res = await executeStabilityImageGeneration({
+      prompt: 'A futuristic city at sunset'
+    });
+
+    assert.equal(res.success, true);
+    assert.equal(res.provider, 'Stability AI');
+    assert.equal(res.modelId, 'stable-image-core');
+    assert.ok(res.imageDataUri.startsWith('data:image/png;base64,iVBORw0KGgo'));
+    assert.ok(calledUrl.includes('api.stability.ai/v2beta/stable-image/generate/core'));
+    assert.equal(calledHeaders.Authorization, 'Bearer sk-test-stability-key-123');
   });
 
   // Restore original fetch
