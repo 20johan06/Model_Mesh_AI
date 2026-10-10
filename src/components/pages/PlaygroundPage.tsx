@@ -23,6 +23,8 @@ import {
   Download
 } from 'lucide-react';
 
+export type FeedbackRating = 'good' | 'sufficient' | 'perfect';
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
@@ -48,6 +50,7 @@ export interface ChatMessage {
     title: string;
     message: string;
   };
+  feedback?: FeedbackRating;
 }
 
 const CodeBlock: React.FC<{ language: string; code: string }> = ({ language, code }) => {
@@ -198,6 +201,14 @@ export const PlaygroundPage: React.FC = () => {
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [expandedMetadataId, setExpandedMetadataId] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [ratings, setRatings] = useState<Record<string, FeedbackRating>>({});
+
+  const handleRatingChange = (msgId: string, rating: FeedbackRating) => {
+    setRatings((prev) => ({
+      ...prev,
+      [msgId]: rating
+    }));
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -420,6 +431,7 @@ export const PlaygroundPage: React.FC = () => {
     setMessages([]);
     setInputPrompt('');
     setExpandedMetadataId(null);
+    setRatings({});
   };
 
   const toggleMetadata = (msgId: string) => {
@@ -665,6 +677,60 @@ export const PlaygroundPage: React.FC = () => {
                             </>
                           )}
                         </button>
+                      </div>
+                    )}
+
+                    {/* Response Quality Feedback Controls */}
+                    {msg.sender === 'assistant' && msg.content && !msg.error && (
+                      <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="text-[11px] text-slate-400 font-medium">Was this response helpful?</span>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleRatingChange(msg.id, 'good')}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                              ratings[msg.id] === 'good'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                            }`}
+                            title="Rate as Good"
+                          >
+                            <span>👍</span>
+                            <span>Good</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleRatingChange(msg.id, 'sufficient')}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                              ratings[msg.id] === 'sufficient'
+                                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                            }`}
+                            title="Rate as Sufficient"
+                          >
+                            <span className="text-[10px]">◉</span>
+                            <span>Sufficient</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleRatingChange(msg.id, 'perfect')}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                              ratings[msg.id] === 'perfect'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                            }`}
+                            title="Rate as Perfect"
+                          >
+                            <span>⭐</span>
+                            <span>Perfect</span>
+                          </button>
+                        </div>
+
+                        {ratings[msg.id] && (
+                          <span className="text-[10px] text-emerald-400 font-medium animate-fadeIn ml-auto sm:ml-0">
+                            Thanks for your feedback!
+                          </span>
+                        )}
                       </div>
                     )}
 
