@@ -17,7 +17,7 @@ const router = Router();
  * POST /api/generate-image
  * Dedicated backend endpoint for Stability AI image generation
  */
-router.post('/generate-image', async (req, res) => {
+const handleGenerateImage = async (req, res) => {
   try {
     const { prompt, options = {} } = req.body || {};
     const promptText = (prompt || req.body.query || '').trim();
@@ -94,13 +94,9 @@ router.post('/generate-image', async (req, res) => {
       message: error.message || 'An unexpected error occurred during image generation.'
     });
   }
-});
+};
 
-/**
- * POST /api/execute
- * Executes a full end-to-end task pipeline with real LLM inference
- */
-router.post('/', async (req, res) => {
+const handleExecuteTask = async (req, res) => {
   try {
     const { query, context: userContext, strategy = 'balanced', options = {}, history = [] } = req.body || {};
 
@@ -222,6 +218,15 @@ router.post('/', async (req, res) => {
       message: error.message || 'An unexpected error occurred during task execution.'
     });
   }
+};
+
+router.post('/generate-image', handleGenerateImage);
+router.post('/execute', handleExecuteTask);
+router.post('/', (req, res) => {
+  if (req.baseUrl && req.baseUrl.includes('generate-image')) {
+    return handleGenerateImage(req, res);
+  }
+  return handleExecuteTask(req, res);
 });
 
 export default router;

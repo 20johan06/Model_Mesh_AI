@@ -10,6 +10,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const allowedOrigins = CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean);
 
 // Basic Security Headers Middleware
 app.use((req, res, next) => {
@@ -19,9 +20,32 @@ app.use((req, res, next) => {
   next();
 });
 
-// Development CORS configuration
+// Dynamic CORS configuration supporting deployed Render frontends and local dev
 app.use(cors({
-  origin: CORS_ORIGIN,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., server-to-server, curl, mobile apps)
+    if (!origin) return callback(null, true);
+
+    // Allow origins explicitly listed in CORS_ORIGIN env var
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    // Allow Render deployment subdomains (*.onrender.com)
+    try {
+      const hostname = new URL(origin).hostname;
+      if (hostname.endsWith('.onrender.com') || hostname === 'onrender.com') {
+        return callback(null, true);
+      }
+    } catch {
+      // Invalid URL format
+    }
+
+    // Allow local development origins (localhost or 127.0.0.1 on any port)
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+      return callback(null, true);
+    }
+
+    callback(null, false);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));

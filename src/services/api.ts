@@ -3,7 +3,13 @@
  * Reads base URL from VITE_API_URL or defaults to http://localhost:3001
  */
 
-export const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3001';
+const rawApiUrl = (import.meta.env.VITE_API_URL as string) ||
+                  (import.meta.env.VITE_BACKEND_URL as string) ||
+                  (import.meta.env.VITE_SERVER_URL as string) ||
+                  (import.meta.env.VITE_API_BASE_URL as string) ||
+                  'http://localhost:3001';
+
+export const API_BASE_URL = rawApiUrl.trim().replace(/\/+$/, '');
 
 export interface HealthCheckResponse {
   status: string;
@@ -100,7 +106,7 @@ export async function checkBackendHealth(): Promise<HealthCheckResponse | null> 
 
     return await response.json();
   } catch (error) {
-    console.warn('[API] Health check request failed:', error);
+    console.warn(`[API] Health check failed to connect to ${API_BASE_URL}:`, error);
     return null;
   }
 }
@@ -123,16 +129,20 @@ export async function executeTaskApi(payload: ExecuteTaskRequest): Promise<Execu
     if (!response.ok && !data.status) {
       return {
         status: 'provider_execution_error',
-        message: data.message || `Server returned HTTP ${response.status}: ${response.statusText}`
+        message: data.message || `Backend returned HTTP ${response.status}: ${response.statusText}`
       };
     }
 
     return data;
   } catch (error: any) {
     console.error('[API] Execution request failed:', error);
+    const isFailedToFetch = error?.message === 'Failed to fetch' || error?.name === 'TypeError';
+    const detailMsg = isFailedToFetch
+      ? `Failed to fetch: Unable to connect to backend API at ${API_BASE_URL}. Please verify CORS headers and backend service availability at ${API_BASE_URL}/api/health.`
+      : (error?.message || 'Failed to connect to backend execution service.');
     return {
       status: 'provider_execution_error',
-      message: error.message || 'Failed to connect to backend execution service.'
+      message: detailMsg
     };
   }
 }
@@ -162,9 +172,13 @@ export async function generateImageApi(prompt: string, options: Record<string, u
     return data;
   } catch (error: any) {
     console.error('[API] Image generation request failed:', error);
+    const isFailedToFetch = error?.message === 'Failed to fetch' || error?.name === 'TypeError';
+    const detailMsg = isFailedToFetch
+      ? `Failed to fetch: Unable to connect to backend API at ${API_BASE_URL}. Please verify CORS headers and backend service availability at ${API_BASE_URL}/api/health.`
+      : (error?.message || 'Failed to connect to image generation service.');
     return {
       status: 'provider_execution_error',
-      message: error.message || 'Failed to connect to image generation service.'
+      message: detailMsg
     };
   }
 }

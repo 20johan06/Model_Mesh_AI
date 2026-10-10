@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useModelMesh } from '../../context/ModelMeshContext';
 import type { RoutingStrategy } from '../../types';
-import { executeTaskApi, generateImageApi, type ExecuteTaskResponse } from '../../services/api';
+import { executeTaskApi, generateImageApi, API_BASE_URL, type ExecuteTaskResponse } from '../../services/api';
 import {
   Send,
   User,
@@ -367,7 +367,7 @@ export const PlaygroundPage: React.FC = () => {
                   error: {
                     type: 'network_error',
                     title: 'Backend Connection Error',
-                    message: err.message || 'Could not connect to backend server at http://localhost:3001.'
+                    message: err?.message || `Could not connect to backend server at ${API_BASE_URL}.`
                   }
                 }
               : msg
