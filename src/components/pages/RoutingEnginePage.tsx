@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useModelMesh } from '../../context/ModelMeshContext';
 import type { RoutingStrategy } from '../../types';
 import {
@@ -9,7 +10,8 @@ import {
   CheckCircle2,
   Sparkles,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  X
 } from 'lucide-react';
 
 export const RoutingEnginePage: React.FC = () => {
@@ -34,6 +36,18 @@ export const RoutingEnginePage: React.FC = () => {
   const [operator, setOperator] = useState<'equals' | 'contains' | 'greater_than' | 'less_than'>('equals');
   const [value, setValue] = useState('Code');
   const [targetModelId, setTargetModelId] = useState(models[0]?.id || 'claude-3-5-sonnet');
+
+  // Lock background scroll when modal is active
+  useEffect(() => {
+    if (showRuleModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showRuleModal]);
 
   const handleCreateRule = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,24 +79,24 @@ export const RoutingEnginePage: React.FC = () => {
   return (
     <div className="space-y-8 pb-12 fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/10 pb-6">
+        <div className="space-y-1">
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
             <Cpu className="w-4 h-4" />
             <span>Deterministic Policy & Rules Engine</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white mt-1">Routing Engine Configuration</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Routing Engine Configuration</h1>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
             Define multi-criteria weights, SLA latency bounds, rule-based overrides, and failover cascade chains.
           </p>
         </div>
 
         <button
           onClick={() => setShowRuleModal(true)}
-          className="btn-primary py-2 px-4 text-xs font-semibold"
+          className="btn-primary shrink-0 text-xs font-semibold py-2.5 px-4 shadow-sm"
         >
           <Plus className="w-4 h-4" />
-          Create Custom Rule
+          <span>Create Custom Rule</span>
         </button>
       </div>
 
@@ -339,97 +353,115 @@ export const RoutingEnginePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Custom Rule Modal */}
-      {showRuleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="glass-panel p-6 max-w-md w-full border-indigo-500/40 space-y-4 animate-fadeIn">
-            <h3 className="text-lg font-bold text-white">Create Custom Routing Rule</h3>
-
-            <form onSubmit={handleCreateRule} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Rule Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Code Refactoring Priority"
-                  value={ruleName}
-                  onChange={(e) => setRuleName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Condition Field</label>
-                <select
-                  value={conditionField}
-                  onChange={(e) => setConditionField(e.target.value as any)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"
-                >
-                  <option value="domain">Prompt Domain</option>
-                  <option value="token_count">Token Count</option>
-                  <option value="keyword">Contains Keyword</option>
-                  <option value="max_latency_budget">Max Latency Budget</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Operator</label>
-                  <select
-                    value={operator}
-                    onChange={(e) => setOperator(e.target.value as any)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"
-                  >
-                    <option value="equals">Equals</option>
-                    <option value="contains">Contains</option>
-                    <option value="greater_than">Greater Than</option>
-                    <option value="less_than">Less Than</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Value</label>
-                  <input
-                    type="text"
-                    required
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Target Route Model</label>
-                <select
-                  value={targetModelId}
-                  onChange={(e) => setTargetModelId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"
-                >
-                  {models.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.provider})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="pt-3 flex justify-end gap-2">
+      {/* Add Custom Rule Modal via Portal */}
+      {showRuleModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md fade-in"
+            onClick={() => setShowRuleModal(false)}
+          >
+            <div
+              className="glass-panel w-full max-w-md flex flex-col border-indigo-500/40 shadow-2xl overflow-hidden rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0 bg-slate-900/60">
+                <h3 className="text-lg font-bold text-white tracking-tight">Create Custom Routing Rule</h3>
                 <button
                   type="button"
                   onClick={() => setShowRuleModal(false)}
-                  className="btn-secondary py-2 px-4"
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                  title="Close dialog"
                 >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary py-2 px-4">
-                  Save Rule
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <form onSubmit={handleCreateRule} className="p-6 space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Rule Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Code Refactoring Priority"
+                    value={ruleName}
+                    onChange={(e) => setRuleName(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Condition Field</label>
+                  <select
+                    value={conditionField}
+                    onChange={(e) => setConditionField(e.target.value as any)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="domain">Prompt Domain</option>
+                    <option value="token_count">Token Count</option>
+                    <option value="keyword">Contains Keyword</option>
+                    <option value="max_latency_budget">Max Latency Budget</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Operator</label>
+                    <select
+                      value={operator}
+                      onChange={(e) => setOperator(e.target.value as any)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="equals">Equals</option>
+                      <option value="contains">Contains</option>
+                      <option value="greater_than">Greater Than</option>
+                      <option value="less_than">Less Than</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Value</label>
+                    <input
+                      type="text"
+                      required
+                      value={value}
+                      onChange={(e) => setValue(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Target Route Model</label>
+                  <select
+                    value={targetModelId}
+                    onChange={(e) => setTargetModelId(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    {models.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.provider})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="pt-3 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRuleModal(false)}
+                    className="btn-secondary py-2 px-4 text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary py-2 px-4 text-xs font-semibold shadow-sm">
+                    Save Rule
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

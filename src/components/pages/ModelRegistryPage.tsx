@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useModelMesh } from '../../context/ModelMeshContext';
 import type { Provider, Domain } from '../../types';
 import {
@@ -16,6 +17,18 @@ export const ModelRegistryPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Lock background scroll when modal is active
+  useEffect(() => {
+    if (showAddModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showAddModal]);
 
   // New Model Form State
   const [name, setName] = useState('');
@@ -76,40 +89,41 @@ export const ModelRegistryPage: React.FC = () => {
   return (
     <div className="space-y-8 pb-12 fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/10 pb-6">
+        <div className="space-y-1">
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
             <Layers className="w-4 h-4" />
             <span>Active Model Catalog & Benchmark Specs</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white mt-1">Model Registry</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Model Registry</h1>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
             Manage available LLM endpoints, benchmark parameters, token pricing, and SLA latency metrics.
           </p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn-primary py-2 px-4 text-xs font-semibold"
+          className="btn-primary shrink-0 text-xs font-semibold py-2.5 px-4 shadow-sm"
         >
-          <Plus className="w-4 h-4" /> Register New Model
+          <Plus className="w-4 h-4" />
+          <span>Register New Model</span>
         </button>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="glass-panel p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-72">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Search model name or provider..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           {['all', 'OpenAI', 'Anthropic', 'DeepSeek', 'Google', 'Meta'].map((prov) => (
             <button
               key={prov}
@@ -131,7 +145,7 @@ export const ModelRegistryPage: React.FC = () => {
         {filteredModels.map((m) => (
           <div
             key={m.id}
-            className={`glass-panel p-5 space-y-4 border transition ${
+            className={`glass-panel p-5 flex flex-col justify-between space-y-4 border transition ${
               m.active ? 'border-white/10 hover:border-indigo-500/40' : 'border-rose-500/20 opacity-60'
             }`}
           >
@@ -193,156 +207,174 @@ export const ModelRegistryPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Add Custom Model Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="glass-panel p-6 max-w-lg w-full border-indigo-500/40 space-y-4 animate-fadeIn max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-lg font-bold text-white">Register Custom LLM Model</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddModelSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Model Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Llama-3.3-8B-Custom"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Provider</label>
-                  <select
-                    value={provider}
-                    onChange={(e) => setProvider(e.target.value as Provider)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white"
-                  >
-                    <option value="OpenAI">OpenAI</option>
-                    <option value="Anthropic">Anthropic</option>
-                    <option value="DeepSeek">DeepSeek</option>
-                    <option value="Google">Google</option>
-                    <option value="Meta">Meta</option>
-                    <option value="Mistral">Mistral</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Input Cost ($/1M)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={inputCost}
-                    onChange={(e) => setInputCost(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Output Cost ($/1M)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={outputCost}
-                    onChange={(e) => setOutputCost(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Latency (ms)</label>
-                  <input
-                    type="number"
-                    required
-                    value={avgLatencyMs}
-                    onChange={(e) => setAvgLatencyMs(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Quality Score (1-100)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    required
-                    value={qualityScore}
-                    onChange={(e) => setQualityScore(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Context Window</label>
-                  <input
-                    type="number"
-                    required
-                    value={contextWindow}
-                    onChange={(e) => setContextWindow(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Description</label>
-                <textarea
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Short summary of capabilities..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Domain Specialties</label>
-                <div className="flex flex-wrap gap-2">
-                  {(['Code', 'Math', 'Reasoning', 'Creative', 'General', 'Speed'] as Domain[]).map((dom) => {
-                    const isSel = selectedDomains.includes(dom);
-                    return (
-                      <button
-                        type="button"
-                        key={dom}
-                        onClick={() => handleDomainToggle(dom)}
-                        className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
-                          isSel ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'
-                        }`}
-                      >
-                        {dom}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-3 flex justify-end gap-2">
+      {/* Add Custom Model Modal via Portal */}
+      {showAddModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md fade-in"
+            onClick={() => setShowAddModal(false)}
+          >
+            <div
+              className="glass-panel w-full max-w-[620px] max-h-[85vh] sm:max-h-[88vh] flex flex-col border-indigo-500/40 shadow-2xl overflow-hidden rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Sticky Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0 bg-slate-900/60">
+                <h3 className="text-lg font-bold text-white tracking-tight">Register Custom LLM Model</h3>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="btn-secondary py-2 px-4"
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                  title="Close dialog"
                 >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary py-2 px-4">
-                  Add to Registry
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              {/* Form & Scrollable Content */}
+              <form onSubmit={handleAddModelSubmit} className="flex flex-col min-h-0 flex-1">
+                <div className="p-6 overflow-y-auto space-y-4 text-xs flex-1 custom-scrollbar">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Model Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Llama-3.3-8B-Custom"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Provider</label>
+                      <select
+                        value={provider}
+                        onChange={(e) => setProvider(e.target.value as Provider)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="OpenAI">OpenAI</option>
+                        <option value="Anthropic">Anthropic</option>
+                        <option value="DeepSeek">DeepSeek</option>
+                        <option value="Google">Google</option>
+                        <option value="Meta">Meta</option>
+                        <option value="Mistral">Mistral</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Input Cost ($/1M)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={inputCost}
+                        onChange={(e) => setInputCost(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Output Cost ($/1M)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={outputCost}
+                        onChange={(e) => setOutputCost(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Latency (ms)</label>
+                      <input
+                        type="number"
+                        required
+                        value={avgLatencyMs}
+                        onChange={(e) => setAvgLatencyMs(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Quality Score (1-100)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        required
+                        value={qualityScore}
+                        onChange={(e) => setQualityScore(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Context Window</label>
+                      <input
+                        type="number"
+                        required
+                        value={contextWindow}
+                        onChange={(e) => setContextWindow(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Description</label>
+                    <textarea
+                      rows={2}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Short summary of capabilities..."
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Domain Specialties</label>
+                    <div className="flex flex-wrap gap-2">
+                      {(['Code', 'Math', 'Reasoning', 'Creative', 'General', 'Speed'] as Domain[]).map((dom) => {
+                        const isSel = selectedDomains.includes(dom);
+                        return (
+                          <button
+                            type="button"
+                            key={dom}
+                            onClick={() => handleDomainToggle(dom)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                              isSel ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {dom}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sticky Action Footer */}
+                <div className="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3 shrink-0 bg-slate-900/60">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="btn-secondary py-2 px-4 text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary py-2 px-4 text-xs font-semibold shadow-sm">
+                    Add to Registry
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

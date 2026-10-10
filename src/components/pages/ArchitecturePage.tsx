@@ -100,14 +100,14 @@ print(f"Latency: {response.execution_time_ms}ms")`;
   return (
     <div className="space-y-8 pb-12 fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/10 pb-6">
+        <div className="space-y-1">
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
             <Network className="w-4 h-4" />
             <span>Visual Pipeline Topology & Technical Specs</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white mt-1">System Architecture</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">System Architecture</h1>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
             Interactive visual request lifecycle breakdown, mathematical scoring formulas, and SDK integration guides.
           </p>
         </div>

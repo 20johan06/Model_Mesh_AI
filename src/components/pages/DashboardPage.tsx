@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useModelMesh } from '../../context/ModelMeshContext';
 import type { RoutingResult } from '../../types';
 import {
@@ -22,6 +23,18 @@ export const DashboardPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [selectedLogModal, setSelectedLogModal] = useState<RoutingResult | null>(null);
+
+  // Lock background scroll when modal is active
+  useEffect(() => {
+    if (selectedLogModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedLogModal]);
 
   // Filtered logs
   const filteredLogs = useMemo(() => {
@@ -69,28 +82,29 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="space-y-8 pb-12 fade-in">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/10 pb-6">
+        <div className="space-y-1">
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
             <BarChart3 className="w-4 h-4" />
             <span>Telemetry & Routing Intelligence</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white mt-1">Analytics Dashboard</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Analytics Dashboard</h1>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
             Real-time aggregate telemetry, cost savings metrics, latency distribution, and audit request logs.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleExportLogs}
-            className="btn-secondary text-xs py-2 px-3"
+            className="btn-secondary text-xs py-2.5 px-3.5 font-semibold shadow-sm"
           >
-            <Download className="w-3.5 h-3.5" /> Export JSON
+            <Download className="w-3.5 h-3.5" />
+            <span>Export JSON</span>
           </button>
           <button
             onClick={clearLogs}
-            className="p-2 text-slate-400 hover:text-rose-400 bg-slate-900 border border-slate-800 rounded-lg transition"
+            className="p-2.5 text-slate-400 hover:text-rose-400 bg-slate-900 border border-slate-800 rounded-xl transition shadow-sm"
             title="Clear request history logs"
           >
             <Trash2 className="w-4 h-4" />
@@ -317,60 +331,70 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Log Detail Modal */}
-      {selectedLogModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="glass-panel p-6 max-w-2xl w-full border-indigo-500/40 space-y-4 animate-fadeIn max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div>
-                <span className="text-xs text-indigo-400 font-mono font-bold">{selectedLogModal.id}</span>
-                <h3 className="text-lg font-bold text-white">Request Routing Detail</h3>
+      {/* Log Detail Modal via Portal */}
+      {selectedLogModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md fade-in"
+            onClick={() => setSelectedLogModal(null)}
+          >
+            <div
+              className="glass-panel w-full max-w-2xl max-h-[85vh] sm:max-h-[88vh] flex flex-col border-indigo-500/40 shadow-2xl overflow-hidden rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0 bg-slate-900/60">
+                <div>
+                  <span className="text-xs text-indigo-400 font-mono font-bold">{selectedLogModal.id}</span>
+                  <h3 className="text-lg font-bold text-white tracking-tight">Request Routing Detail</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLogModal(null)}
+                  className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                  title="Close dialog"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedLogModal(null)}
-                className="p-1 text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              <div className="p-6 overflow-y-auto space-y-4 text-xs flex-1 custom-scrollbar">
+                <div>
+                  <label className="text-slate-400 font-bold uppercase block mb-1">Full Prompt Payload</label>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 leading-relaxed font-sans">
+                    {selectedLogModal.prompt}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[10px]">Routed Model</div>
+                    <div className="font-bold text-white">{selectedLogModal.selectedModel.name}</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[10px]">Tokens (In/Out)</div>
+                    <div className="font-bold text-white">{selectedLogModal.promptTokens} / {selectedLogModal.completionTokens}</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[10px]">Execution Latency</div>
+                    <div className="font-bold text-cyan-400">{selectedLogModal.executionTimeMs}ms</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[10px]">Cost Savings</div>
+                    <div className="font-bold text-emerald-400">${selectedLogModal.costSavings.toFixed(5)}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 font-bold uppercase block mb-1">Decision Reasoning</label>
+                  <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 leading-relaxed">
+                    {selectedLogModal.decisionReason}
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <div className="space-y-4 text-xs">
-              <div>
-                <label className="text-slate-400 font-bold uppercase block mb-1">Full Prompt Payload</label>
-                <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 leading-relaxed font-sans">
-                  {selectedLogModal.prompt}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-                <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Routed Model</div>
-                  <div className="font-bold text-white">{selectedLogModal.selectedModel.name}</div>
-                </div>
-                <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Tokens (In/Out)</div>
-                  <div className="font-bold text-white">{selectedLogModal.promptTokens} / {selectedLogModal.completionTokens}</div>
-                </div>
-                <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Execution Latency</div>
-                  <div className="font-bold text-cyan-400">{selectedLogModal.executionTimeMs}ms</div>
-                </div>
-                <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">Cost Savings</div>
-                  <div className="font-bold text-emerald-400">${selectedLogModal.costSavings.toFixed(5)}</div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-slate-400 font-bold uppercase block mb-1">Decision Reasoning</label>
-                <div className="p-3 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-indigo-200">
-                  {selectedLogModal.decisionReason}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
