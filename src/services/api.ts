@@ -1,15 +1,38 @@
 /**
  * ModelMesh AI Frontend API Client Config & Multi-LLM Execution Client
- * Reads base URL from VITE_API_URL or defaults to http://localhost:3001
+ * Prioritizes VITE_API_BASE_URL with fallback to http://localhost:3001
  */
 
-const rawApiUrl = (import.meta.env.VITE_API_URL as string) ||
-                  (import.meta.env.VITE_BACKEND_URL as string) ||
-                  (import.meta.env.VITE_SERVER_URL as string) ||
-                  (import.meta.env.VITE_API_BASE_URL as string) ||
-                  'http://localhost:3001';
+function resolveApiBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL as string) ||
+                 (import.meta.env.VITE_API_URL as string) ||
+                 (import.meta.env.VITE_BACKEND_URL as string) ||
+                 (import.meta.env.VITE_SERVER_URL as string);
 
-export const API_BASE_URL = rawApiUrl.trim().replace(/\/+$/, '');
+  const rawUrl = (envUrl && envUrl.trim()) ? envUrl.trim() : 'http://localhost:3001';
+  let cleanUrl = rawUrl.replace(/\/+$/, '');
+  if (cleanUrl.endsWith('/api')) {
+    cleanUrl = cleanUrl.slice(0, -4);
+  }
+  return cleanUrl;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
+
+/**
+ * Builds an absolute API URL for a given endpoint path, avoiding duplicate /api path segments.
+ * e.g., buildApiUrl('/api/health') -> `${API_BASE_URL}/api/health`
+ */
+export function buildApiUrl(path: string): string {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (cleanPath.startsWith('/api/')) {
+    return `${API_BASE_URL}${cleanPath}`;
+  }
+  if (cleanPath === '/api') {
+    return `${API_BASE_URL}/api`;
+  }
+  return `${API_BASE_URL}/api${cleanPath}`;
+}
 
 export interface HealthCheckResponse {
   status: string;
@@ -91,8 +114,9 @@ export interface ExecuteTaskResponse {
  * Checks backend health endpoint
  */
 export async function checkBackendHealth(): Promise<HealthCheckResponse | null> {
+  const healthUrl = buildApiUrl('/api/health');
   try {
-    const response = await fetch(`${API_BASE_URL}/api/health`, {
+    const response = await fetch(healthUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -106,7 +130,7 @@ export async function checkBackendHealth(): Promise<HealthCheckResponse | null> 
 
     return await response.json();
   } catch (error) {
-    console.warn(`[API] Health check failed to connect to ${API_BASE_URL}:`, error);
+    console.warn(`[API] Health check failed to connect to ${healthUrl}:`, error);
     return null;
   }
 }
@@ -115,8 +139,9 @@ export async function checkBackendHealth(): Promise<HealthCheckResponse | null> 
  * Executes a live task request via backend multi-LLM execution service
  */
 export async function executeTaskApi(payload: ExecuteTaskRequest): Promise<ExecuteTaskResponse> {
+  const executeUrl = buildApiUrl('/api/execute');
   try {
-    const response = await fetch(`${API_BASE_URL}/api/execute`, {
+    const response = await fetch(executeUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -138,7 +163,7 @@ export async function executeTaskApi(payload: ExecuteTaskRequest): Promise<Execu
     console.error('[API] Execution request failed:', error);
     const isFailedToFetch = error?.message === 'Failed to fetch' || error?.name === 'TypeError';
     const detailMsg = isFailedToFetch
-      ? `Failed to fetch: Unable to connect to backend API at ${API_BASE_URL}. Please verify CORS headers and backend service availability at ${API_BASE_URL}/api/health.`
+      ? `Failed to fetch: Unable to connect to backend API at ${API_BASE_URL}. Please verify CORS headers and backend service availability at ${buildApiUrl('/api/health')}.`
       : (error?.message || 'Failed to connect to backend execution service.');
     return {
       status: 'provider_execution_error',
@@ -151,8 +176,9 @@ export async function executeTaskApi(payload: ExecuteTaskRequest): Promise<Execu
  * Generates an image via backend Stability AI endpoint
  */
 export async function generateImageApi(prompt: string, options: Record<string, unknown> = {}): Promise<ExecuteTaskResponse> {
+  const generateImageUrl = buildApiUrl('/api/generate-image');
   try {
-    const response = await fetch(`${API_BASE_URL}/api/generate-image`, {
+    const response = await fetch(generateImageUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -174,7 +200,7 @@ export async function generateImageApi(prompt: string, options: Record<string, u
     console.error('[API] Image generation request failed:', error);
     const isFailedToFetch = error?.message === 'Failed to fetch' || error?.name === 'TypeError';
     const detailMsg = isFailedToFetch
-      ? `Failed to fetch: Unable to connect to backend API at ${API_BASE_URL}. Please verify CORS headers and backend service availability at ${API_BASE_URL}/api/health.`
+      ? `Failed to fetch: Unable to connect to backend API at ${API_BASE_URL}. Please verify CORS headers and backend service availability at ${buildApiUrl('/api/health')}.`
       : (error?.message || 'Failed to connect to image generation service.');
     return {
       status: 'provider_execution_error',
@@ -182,3 +208,4 @@ export async function generateImageApi(prompt: string, options: Record<string, u
     };
   }
 }
+
